@@ -184,7 +184,14 @@ def lucky_pick(
     elif mode == "chill":
         songs = playlists.get("Chill", [])
     else:
-        songs = playlists.get("Hype", []) + playlists.get("Chill", [])
+        # "Any" pulls from the combined pool. Mixed songs get weight 2 so
+        # each one is twice as likely to be picked as a Hype/Chill song.
+        hype = playlists.get("Hype", [])
+        chill = playlists.get("Chill", [])
+        mixed = playlists.get("Mixed", [])
+        songs = hype + chill + mixed
+        weights = [1] * (len(hype) + len(chill)) + [2] * len(mixed)
+        return weighted_choice_or_none(songs, weights)
 
     return random_choice_or_none(songs)
 
@@ -193,7 +200,21 @@ def random_choice_or_none(songs: List[Song]) -> Optional[Song]:
     """Return a random song or None."""
     import random
 
+    if not songs:
+        return None
     return random.choice(songs)
+
+
+def weighted_choice_or_none(
+    songs: List[Song],
+    weights: List[int],
+) -> Optional[Song]:
+    """Return a random song chosen by weight, or None if empty."""
+    import random
+
+    if not songs:
+        return None
+    return random.choices(songs, weights=weights, k=1)[0]
 
 
 def history_summary(history: List[Song]) -> Dict[str, int]:
